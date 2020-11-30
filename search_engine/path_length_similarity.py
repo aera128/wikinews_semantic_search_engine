@@ -34,21 +34,21 @@ def get_max_value(q, document):
 
 
 def get_mean_value(query, document):
-    tmp = list()
+    values = list()
     for q in query:
         h = get_max_value(q, document)
-        tmp.append(h)
-    return sum(tmp) / len(tmp)
+        values.append(h)
+    return sum(values) / len(values)
 
 
 def get_path_length_similarity(entities):
-    d = dict()
+    similarities = dict()
     with open('data/article_typeid.json') as article_vector:
         articles = json.load(article_vector)
         for article in articles:
             score = get_mean_value(entities, articles[article])
-            d[article] = score
-    return d
+            similarities[article] = score
+    return similarities
 
 
 f = open("data/ontology.json")

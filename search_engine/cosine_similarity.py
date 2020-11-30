@@ -62,11 +62,11 @@ def get_query_vector(wordnet):
 
 
 def get_cosine_similarity(query_vector):
-    results = dict()
+    similarities = dict()
     with open('data/article_vector.json') as article_vector:
         articles = json.load(article_vector)
         for (k, v) in articles.items():
             cos = cosine_similarity([query_vector], [v])
             if cos > 0:
-                results[k] = float(cos[0][0])
-    return results
+                similarities[k] = float(cos[0][0])
+    return similarities
