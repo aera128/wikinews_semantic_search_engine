@@ -4,8 +4,8 @@
 - pip
 
 ### Installation
-- `clone https://github.com/aera128/wikinews-semantic-search-engine.git`
-- `cd wikinews-semantic-search-engine`
+- `clone https://github.com/aera128/wikinews_semantic_search_engine.git`
+- `cd wikinews_semantic_search_engine`
 - `python -m venv ./venv`
 - `pip install -r requirements.txt --user`
 - `python manage.py runserver`
