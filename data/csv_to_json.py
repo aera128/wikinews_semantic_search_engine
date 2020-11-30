@@ -5,17 +5,17 @@ f = open('ontology.json', 'w')
 
 
 def search_child(e, f):
-    tmp = dict()
+    child = dict()
     with open('ontology.csv') as file:
         reader = csv.reader(file, delimiter=',')
-        tmp["name"] = e
+        child["name"] = e
         rows = list()
         for row in reader:
             if row[1] == e:
                 rows.append(search_child(row[0], f))
         if len(rows) > 0:
-            tmp["children"] = rows
-    return tmp
+            child["children"] = rows
+    return child
 
 
 entity = "entity"
