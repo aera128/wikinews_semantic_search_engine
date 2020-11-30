@@ -1,6 +1,6 @@
 import math
 
-from search_engine.pathlength_similarity import *
+from search_engine.path_length_similarity import *
 
 nodes = builder.get_nodes()
 
@@ -16,14 +16,12 @@ def gen_digraph():
 
 
 def get_entity_frequency():
-    d = {}
+    d = dict()
     with open('data/article_typeid.json') as article_type:
         articles = json.load(article_type)
-
         for i in articles:
             for j in articles[i]:
                 if j in d:
-
                     d[j] = d[j] + 1
                 else:
                     d[j] = 1
@@ -33,7 +31,6 @@ def get_entity_frequency():
         for i in words:
             if i not in d:
                 d[i] = 0
-
     return d
 
 
@@ -45,10 +42,9 @@ def frequency():
 
 
 def get_concepts_frequency():
-    dictionary = {}
+    dictionary = dict()
     for i in nodes:
         if i.name in entitiesFrequency:
-
             dictionary[i.name] = entitiesFrequency[i.name]
         else:
             for j in nx.descendants(graph, i.name):
@@ -57,13 +53,12 @@ def get_concepts_frequency():
                         dictionary[i.name] += entitiesFrequency[j]
                     else:
                         dictionary[i.name] = entitiesFrequency[j]
-
     return dictionary
 
 
 # P(c)
-def get_proba():
-    probabilities = {}
+def get_probability():
+    probabilities = dict()
     for i in nodes:
         p = everyConceptFrequency[i.name] / N
         probabilities[i.name] = p
@@ -72,38 +67,37 @@ def get_proba():
 
 # -log P(c)
 def get_info_content():
-    informations = {}
-    probabilities = get_proba()
+    infos = dict()
+    probabilities = get_probability()
     for i in probabilities:
         if probabilities[i] > 0:
-            informations[i] = abs(math.log(probabilities[i]))
+            infos[i] = abs(math.log(probabilities[i]))
         else:
-            informations[i] = 0
-    return informations
+            infos[i] = 0
+    return infos
 
 
-# Resnik Method
 def get_similarity(e1, e2):
     tup = (e1, e2)
-    if tup in lowestCommonAncestor:
-        lca = lowestCommonAncestor[(e1, e2)]
+    if tup in lowes_common_ancestor:
+        lca = lowes_common_ancestor[(e1, e2)]
     else:
-        lca = lowestCommonAncestor[(e2, e1)]
+        lca = lowes_common_ancestor[(e2, e1)]
 
-    return informationContent[lca]
+    return info_content[lca]
 
 
 def get_max_value_content(q, document):
-    highest = 0
+    maximum = 0
     for i in document:
         similarity = get_similarity(q, i)
-        if similarity > highest:
-            highest = similarity
-    return highest
+        if similarity > maximum:
+            maximum = similarity
+    return maximum
 
 
 def get_mean_content(query, document):
-    liste = []
+    liste = list()
     for q in query:
         h = get_max_value_content(q, document)
         liste.append(h)
@@ -111,10 +105,9 @@ def get_mean_content(query, document):
 
 
 def get_semantic_content_similarity(entities):
-    dico = {}
+    dico = dict()
     with open('data/article_typeid.json') as article_vector:
         articles = json.load(article_vector)
-
         for article in articles:
             score = get_mean_content(entities, articles[article])
             dico[article] = score
@@ -125,5 +118,5 @@ graph = gen_digraph()
 entitiesFrequency = get_entity_frequency()
 N = frequency()
 everyConceptFrequency = get_concepts_frequency()
-informationContent = get_info_content()
-lowestCommonAncestor = dict(nx.all_pairs_lowest_common_ancestor(graph))
+info_content = get_info_content()
+lowes_common_ancestor = dict(nx.all_pairs_lowest_common_ancestor(graph))
