@@ -1,0 +1,307 @@
+{% extends 'search_engine/base.html' %}
+
+{% block styles %}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.22/css/dataTables.bootstrap4.min.css">
+    <style>
+
+    </style>
+{% endblock %}
+{% block body %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-5 col-md-6 col-12">
+                Entities : [<span id="selected-entities"></span>]
+                <form id="form-onto">
+                    <ul class="list-group list-group-flush mt-4" id="list-ontology">
+                    </ul>
+                </form>
+            </div>
+            <div class="col-lg-7 col-md-6 col-12">
+
+                <button class="btn btn-danger btn-block mt-4 lead" id="btn-clear"><i class="fas fa-trash"></i> Clear
+                    Selection
+                </button>
+                <button class="btn btn-info btn-block mb-4 lead" id="btn-ajax"><i class="fas fa-search"></i> Search
+                </button>
+                <div id="accordion">
+                    <div class="card">
+                        <div class="card-header" id="headingOne">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link btn-block d-flex justify-content-between"
+                                        data-toggle="collapse" data-target="#collapseOne"
+                                        aria-expanded="true" aria-controls="collapseOne">
+                                    Cosine Similarity <i class="fas fa-ellipsis-h" id="i-co"></i>
+                                </button>
+                            </h5>
+                        </div>
+
+                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
+                             data-parent="#accordion">
+                            <div class="card-body">
+                                <table class="table table-cosine">
+                                    <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Score</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="result-cosine">
+                                    <tr>
+                                        <td>No data</td>
+                                        <td>No data</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingTwo">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link btn-block d-flex justify-content-between collapsed"
+                                        data-toggle="collapse" data-target="#collapseTwo"
+                                        aria-expanded="false" aria-controls="collapseTwo">
+                                    Semantic Path Length <i class="fas fa-ellipsis-h" id="i-pa"></i>
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                            <div class="card-body">
+                                <table class="table table-path">
+                                    <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Score</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="result-path">
+                                    <tr>
+                                        <td>No data</td>
+                                        <td>No data</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header" id="headingThree">
+                            <h5 class="mb-0">
+                                <button class="btn btn-link btn-block d-flex justify-content-between collapsed"
+                                        data-toggle="collapse"
+                                        data-target="#collapseThree" aria-expanded="false"
+                                        aria-controls="collapseThree">
+                                    Semantic Content Similarity <i class="fas fa-ellipsis-h" id="i-se"></i>
+                                </button>
+                            </h5>
+                        </div>
+                        <div id="collapseThree" class="collapse" aria-labelledby="headingThree"
+                             data-parent="#accordion">
+                            <div class="card-body">
+                                <table class="table table-semantic">
+                                    <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Score</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="result-semantic">
+                                    <tr>
+                                        <td>No data</td>
+                                        <td>No data</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script src="https://cdn.datatables.net/1.10.22/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.22/js/dataTables.bootstrap4.min.js"></script>
+    <script type="text/javascript">
+        let ontology = JSON.parse('{{ ontology | escapejs }}');
+        let results = [];
+        let table_co = null;
+        let table_pa = null;
+        let table_se = null;
+
+        function parse_onto(name, children) {
+            let html;
+            if (children) {
+                html = document.createElement('li');
+                $(html).addClass('list-group-item py-1 hvr-overline-from-left w-100');
+                $(html).html(
+                    '<div class="form-check">' +
+                    '  <input class="form-check-input" type="checkbox" value="' + name + '" id="' + name.replace('.', '-') + '">' +
+                    '  <label  class="form-check-label" for="' + name + '">' +
+                    '    <a href="#' + name.replace('.', '-') + '-list" data-toggle="collapse" aria-expanded="false" aria-controls="collapseExample" class="text-decoration-none text-dark">' + name +
+                    ' <i class="fa fa-angle-down small"></i></a>' +
+                    '  </label>' +
+                    '</div>'
+                )
+                ;
+                let list = document.createElement('ul');
+                $(list).addClass('list-group collapse');
+                $(list).attr("id", name.replace(".", "-") + "-list");
+                $(html).append(list);
+                $(children).each((key, child) => {
+                    let element = document.createElement('li');
+                    $(element).addClass('list-group-item border-0 py-1 w-100');
+                    $(element).append(parse_onto(child.name, child.children));
+                    $(list).append(element);
+                });
+            } else {
+                html = document.createElement("li");
+                $(html).addClass('list-group-item py-1 hvr-overline-from-left  w-100');
+                $(html).html(
+                    "<div class=\"form-check\">" +
+                    "  <input class=\"form-check-input\" type=\"checkbox\" value=\"" + name + "\" id=\"" + name.replace(".", "-") + "\">" +
+                    "  <label class=\"form-check-label\" for=\"" + name + "\">" +
+                    "    " + name + "" +
+                    "  </label>" +
+                    "</div>"
+                );
+            }
+            return html;
+        }
+
+        $("#list-ontology").append(parse_onto(ontology.name, ontology.children));
+
+        let concepts = [];
+        $('#form-onto').change(() => {
+            concepts = [];
+            $("input:checkbox:checked").each((key, element) => {
+                concepts.push($(element).val());
+            });
+            $('#selected-entities').text(concepts)
+        });
+
+        $('#btn-clear').click(() => {
+            $("input:checkbox:checked").each((key, element) => {
+                $(element).prop('checked', false);
+            });
+            concepts = [];
+            $('#selected-entities').text(concepts)
+        });
+
+        $('#btn-ajax').click(() => {
+            concepts = [];
+            $("input:checkbox:checked").each((key, element) => {
+                concepts.push($(element).val());
+            });
+            if (concepts.length > 0) {
+                $.ajax({
+                    url: "{% url 'cosine-similarity' %}",
+                    method: "POST",
+                    data: {
+                        "data": JSON.stringify(concepts),
+                    },
+                    beforeSend: () => {
+                        $("#i-co").attr('class', "fas fa-spinner");
+                        $("#result-cosine").html(
+                            "<tr>" +
+                            "    <td colspan=\"2\" class=\"text-center\">" +
+                            "        <div class=\"spinner-border text-info\" role=\"status\">" +
+                            "            <span class=\"sr-only\">Loading...</span>" +
+                            "        </div>" +
+                            "    </td>" +
+                            "</tr>"
+                        )
+                    },
+                    success: (data) => {
+                        let html = "";
+                        $(data["response"]).each((key, value) => {
+                            html += "<tr><td><a target='_blank' href='https://en.wikinews.org/wiki/" + value["title"] + "'>" + value["title"] + "</a></td><td>" + value["score"] + "</td></tr>";
+                        });
+                        $("#result-cosine").html(html);
+                        if (table_co === null) {
+                            table_co = $('.table-cosine').DataTable({
+                                "order": [[1, "desc"]]
+                            });
+                        } else {
+                            table_co.draw();
+                        }
+                        $("#i-co").attr('class', "fas fa-check");
+                    }
+                });
+                $.ajax({
+                    url: "{% url 'path-length' %}",
+                    method: "POST",
+                    data: {
+                        "data": JSON.stringify(concepts),
+                    },
+                    beforeSend: () => {
+                        $("#i-pa").attr('class', "fas fa-spinner");
+                        $("#result-path").html(
+                            "<tr>" +
+                            "    <td colspan=\"2\" class=\"text-center\">" +
+                            "        <div class=\"spinner-border text-info\" role=\"status\">" +
+                            "            <span class=\"sr-only\">Loading...</span>" +
+                            "        </div>" +
+                            "    </td>" +
+                            "</tr>"
+                        )
+                    },
+                    success: (data) => {
+                        let html = "";
+                        $(data["response"]).each((key, value) => {
+                            html += "<tr><td><a target='_blank' href='https://en.wikinews.org/wiki/" + value["title"] + "'>" + value["title"] + "</a></td><td>" + value["score"] + "</td></tr>";
+                        });
+                        $("#result-path").html(html);
+                        if (table_pa === null) {
+                            table_pa = $('.table-path').DataTable({
+                                "order": [[1, "desc"]]
+                            });
+                        } else {
+                            table_pa.draw();
+                        }
+                        $("#i-pa").attr('class', "fas fa-check");
+
+                    }
+                });
+                $.ajax({
+                    url: "{% url 'semantic-content-similarity' %}",
+                    method: "POST",
+                    data: {
+                        "data": JSON.stringify(concepts),
+                    },
+                    beforeSend: () => {
+                        $("#i-se").attr('class', "fas fa-spinner");
+                        $("#result-semantic").html(
+                            "<tr>" +
+                            "    <td colspan=\"2\" class=\"text-center\">" +
+                            "        <div class=\"spinner-border text-info\" role=\"status\">" +
+                            "            <span class=\"sr-only\">Loading...</span>" +
+                            "        </div>" +
+                            "    </td>" +
+                            "</tr>"
+                        )
+                    },
+                    success: (data) => {
+                        let html = "";
+                        $(data["response"]).each((key, value) => {
+                            html += "<tr><td><a target='_blank' href='https://en.wikinews.org/wiki/" + value["title"] + "'>" + value["title"] + "</a></td><td>" + value["score"] + "</td></tr>";
+                        });
+                        $("#result-semantic").html(html);
+                        if (table_se === null) {
+                            table_se = $('.table-semantic').DataTable({
+                                "order": [[1, "desc"]]
+                            });
+                        } else {
+                            table_se.draw();
+                        }
+                        $("#i-se").attr('class', "fas fa-check");
+                    }
+                });
+            } else {
+                alert("Choose entities first");
+            }
+        });
+    </script>
+{% endblock %}
