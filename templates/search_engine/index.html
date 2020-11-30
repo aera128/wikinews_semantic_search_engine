@@ -190,6 +190,34 @@
             $('#selected-entities').text(concepts)
         });
 
+        function checkParents(element) {
+            element = $(element)
+                .parent()
+                .parent()
+                .parent()
+                .parent()
+                .parent()
+                .children()
+                .first()
+                .children()
+                .first();
+            if (element.is("input")) {
+                element.prop("checked", "true");
+                checkParents(element);
+            }
+            return false
+        }
+
+        $("#form-onto input:checkbox").click((ev) => {
+            if (!$(ev.target).prop("checked")) {
+                $(ev.target).parent().parent().find("input:checkbox:checked").each((k, v) => {
+                    $(v).prop("checked", false);
+                });
+            } else {
+                checkParents(ev.target);
+            }
+        });
+
         $('#btn-ajax').click(() => {
             concepts = [];
             $("input:checkbox:checked").each((key, element) => {
