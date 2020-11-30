@@ -1,4 +1,4 @@
-# WebAnalytique_Master_Project
+# Wikinews Semantic Search Engine Project
 ### Requirements 
 - python 3.6.8
 - pip
